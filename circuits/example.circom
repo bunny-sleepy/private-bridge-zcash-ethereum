@@ -1,14 +1,5 @@
 pragma circom 2.0.0;
 
-template mult () {  
+include "./sha256/sha256.circom";
 
-   // Declaration of signals.  
-   signal input a;  
-   signal input b;  
-   signal output c;  
-
-   // Constraints.  
-   c <== a * b;  
-}
-
-component main = mult();
+component main = Sha256(1024);
