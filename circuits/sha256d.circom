@@ -10,7 +10,7 @@ template Sha256d(nBits) {
     for (i = 0; i < nBits; i++) {
         hasher1.in[i] <== in[nBits];
     }
-    component hasher2 = Sha256(nBits);
+    component hasher2 = Sha256(256);
     for (i = 0; i < 256; i++) {
         hasher2.in[i] <== hasher1.out[i];
     }

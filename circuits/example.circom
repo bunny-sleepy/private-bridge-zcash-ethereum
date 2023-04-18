@@ -1,5 +1,5 @@
 pragma circom 2.0.0;
 
-include "../node_modules/circomlib/circuits/sha256/sha256.circom";
+include "./sha256d.circom";
 
-component main = Sha256(1024);
+component main = Sha256d(1024);
