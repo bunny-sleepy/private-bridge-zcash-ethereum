@@ -14,11 +14,12 @@ template MerkleTree(depth, nBitsLeaf, nBitsNeighbor) {
     signal input index[depth];
 
     signal hash[depth][256];
-    signal tmp[depth - 1][1024];
+    signal tmp[depth][1024];
     signal tmp0[2][256];
 
-    component hasher[depth - 1];
-    component hasher0[2];
+    component hasher[depth];
+    component hasherLeaf = Sha256d(nBitsLeaf);
+    component hasherNeighbor = Sha256d(nBitsNeighbor);
     
     var i;
     var j;
@@ -29,47 +30,46 @@ template MerkleTree(depth, nBitsLeaf, nBitsNeighbor) {
         // dual selector
         idx = 0;
         index[i] * (1 - index[i]) === 0;
-        // leaf inputs
         if (i == 0) {
-            for (k = 0; k < 2; k++) {
-                hasher0[k] = Sha256d(nBitsLeaf + nBitsNeighbor);
-                if (k == 0) {
-                    for (j = 0; j < nBitsLeaf; j++) {
-                        hasher0[k].in[j] <== leaf[j];
-                    }
-                    for (j = 0; j < nBitsNeighbor; j++) {
-                        hasher0[k].in[j + nBitsLeaf] <== neighbor[j];
-                    }
-                } else {
-                    for (j = 0; j < nBitsNeighbor; j++) {
-                        hasher0[k].in[j] <== neighbor[j];
-                    }
-                    for (j = 0; j < nBitsLeaf; j++) {
-                        hasher0[k].in[j + nBitsNeighbor] <== leaf[j];
-                    }
-                }
+            // leaf inputs
+            for (j = 0; j < nBitsLeaf; j++) {
+                hasherLeaf.in[j] <== leaf[j];
+            }
+            for (j = 0; j < nBitsNeighbor; j++) {
+                hasherNeighbor.in[j] <== neighbor[j];
+            }
+            hasher[i] = Sha256d(512);
+            for (j = 0; j < 256; j++) {
+                tmp[i][idx] <== (1 - index[i]) * hasherLeaf.out[j];
+                tmp[i][idx + 1] <== index[i] * hasherNeighbor.out[j];
+                hasher[i].in[j] <== tmp[i][idx] + tmp[i][idx + 1];
+                idx = idx + 2;
             }
             for (j = 0; j < 256; j++) {
-                tmp0[0][j] <== (1 - index[0]) * hasher0[0].out[j];
-                tmp0[1][j] <== index[0] * hasher0[1].out[j];
-                hash[i][j] <== tmp0[0][j] + tmp0[1][j];
+                tmp[i][idx] <== index[i] * hasherLeaf.out[j];
+                tmp[i][idx + 1] <== (1 - index[i]) * hasherNeighbor.out[j];
+                hasher[i].in[j + 256] <== tmp[i][idx] + tmp[i][idx + 1];
+                idx = idx + 2;
+            }
+            for (j = 0; j < 256; j++) {
+                hash[i][j] <== hasher[i].out[j];
             }
         } else {
-            hasher[i - 1] = Sha256d(512);
+            hasher[i] = Sha256d(512);
             for (j = 0; j < 256; j++) {
-                tmp[i - 1][idx] <== (1 - index[i]) * hash[i - 1][j];
-                tmp[i - 1][idx + 1] <== index[i] * merklePath[i - 1][j];
-                hasher[i - 1].in[j] <== tmp[i - 1][idx] + tmp[i - 1][idx + 1];
+                tmp[i][idx] <== (1 - index[i]) * hash[i - 1][j];
+                tmp[i][idx + 1] <== index[i] * merklePath[i - 1][j];
+                hasher[i].in[j] <== tmp[i][idx] + tmp[i][idx + 1];
                 idx = idx + 2;
             }
             for (j = 0; j < 256; j++) {
-                tmp[i - 1][idx] <== index[i] * hash[i - 1][j];
-                tmp[i - 1][idx + 1] <== (1 - index[i]) * merklePath[i - 1][j];
-                hasher[i - 1].in[j + 256] <== tmp[i - 1][idx] + tmp[i - 1][idx + 1];
+                tmp[i][idx] <== index[i] * hash[i - 1][j];
+                tmp[i][idx + 1] <== (1 - index[i]) * merklePath[i - 1][j];
+                hasher[i].in[j + 256] <== tmp[i][idx] + tmp[i][idx + 1];
                 idx = idx + 2;
             }
             for (j = 0; j < 256; j++) {
-                hash[i][j] <== hasher[i - 1].out[j];
+                hash[i][j] <== hasher[i].out[j];
             }
         }
     }
