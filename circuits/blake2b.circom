@@ -110,13 +110,17 @@ function sigma(a,b) {
     return sigma[a][b];
 }
 
-template G(a,b,c,d,x,y) {
+template G(a,b,c,d) {
     signal input v[16][64];
+    signal input x[64];
+    signal input y[64];
     signal output v_out[16][64];
 
-    for (var i=0; i<64; i++) {
-        if (i != a && i != b && i != c && i != d){
-            v_out[i] <== v[i];
+    for (var i=0; i<16; i++) {
+        for (var j=0; j<64; j++) {
+            if (i != a && i != b && i != c && i != d){
+                v_out[i][j] <== v[i][j];
+            }
         }
     }
 
@@ -133,12 +137,14 @@ template G(a,b,c,d,x,y) {
     rot[3] = rotr64(63);
 
     for (var i=0; i<64; i++) {
-        tmpa[i] <== v[a][i] + v[b][i] + (x >> i) & 1;
+        tmpa[i] <== v[a][i] + v[b][i] + x[i];
     }
 
     for (var i=0; i<64; i++) {
         xor[0].a[i] <== tmpa[i];
         xor[0].b[i] <== v[d][i];
+    }
+    for (var i=0; i<64; i++) {
         rot[0].in[i] <== xor[0].out[i];
     }
     for (var i=0; i<64; i++) {
@@ -152,6 +158,8 @@ template G(a,b,c,d,x,y) {
     for (var i=0; i<64; i++) {
         xor[1].a[i] <== v[b][i];
         xor[1].b[i] <== tmpc[i];
+    }
+    for (var i=0; i<64; i++) {
         rot[1].in[i] <== xor[1].out[i];
     }
     for (var i=0; i<64; i++) {
@@ -159,12 +167,14 @@ template G(a,b,c,d,x,y) {
     }
     
     for (var i=0; i<64; i++) {
-        v_out[a][i] <== tmpa[i] + tmpb[i] + (y >> i) & 1;
+        v_out[a][i] <== tmpa[i] + tmpb[i] + y[i];
     }
 
     for (var i=0; i<64; i++) {
         xor[2].a[i] <== v_out[a][i];
         xor[2].b[i] <== tmpd[i];
+    }
+    for (var i=0; i<64; i++) {
         rot[2].in[i] <== xor[2].out[i];
     }
     for (var i=0; i<64; i++) {
@@ -178,6 +188,8 @@ template G(a,b,c,d,x,y) {
     for (var i=0; i<64; i++) {
         xor[3].a[i] <== tmpb[i];
         xor[3].b[i] <== v_out[c][i];
+    }
+    for (var i=0; i<64; i++) {
         rot[3].in[i] <== xor[3].out[i];
     }
     for (var i=0; i<64; i++) {
@@ -207,14 +219,21 @@ template rounds() {
             }
         }
 
-        G[k][0] = G(0, 4, 8, 12, m[sigma(k,0)], m[sigma(k,1)]);
-        G[k][1] = G(1, 5, 9, 13, m[sigma(k,2)], m[sigma(k,3)]);
-        G[k][2] = G(2, 6, 10, 14, m[sigma(k,4)], m[sigma(k,5)]);
-        G[k][3] = G(3, 7, 11, 15, m[sigma(k,6)], m[sigma(k,7)]);
-        G[k][4] = G(0, 5, 10, 15, m[sigma(k,8)], m[sigma(k,9)]);
-        G[k][5] = G(1, 6, 11, 12, m[sigma(k,10)], m[sigma(k,11)]);
-        G[k][6] = G(2, 7, 8, 13, m[sigma(k,12)], m[sigma(k,13)]);
-        G[k][7] = G(3, 4, 9, 14, m[sigma(k,14)], m[sigma(k,15)]);
+        G[k][0] = G(0, 4, 8, 12);
+        G[k][1] = G(1, 5, 9, 13);
+        G[k][2] = G(2, 6, 10, 14);
+        G[k][3] = G(3, 7, 11, 15);
+        G[k][4] = G(0, 5, 10, 15);
+        G[k][5] = G(1, 6, 11, 12);
+        G[k][6] = G(2, 7, 8, 13);
+        G[k][7] = G(3, 4, 9, 14);
+
+        for (var j = 0; j < 8; j++) {
+            for (var l = 0; l < 64; l++) {
+                G[k][j].x[l] <== m[sigma(k,2*j)][l];
+                G[k][j].y[l] <== m[sigma(k,2*j+1)][l];
+            }
+        }
 
         for (var j = 0; j < 8; j++) {
             for (var l = 0; l < 16; l++) {
@@ -240,36 +259,35 @@ template blake2b_compress(last) {
 
     signal v[16][64], m[16][64];
 
-    component xor[2];
-    xor[0] = xor64();
-    xor[1] = xor64();
+    component xor;
+    xor = xor64();
 
     component not = not64();
 
-    for (var i=0; i<16; i++) {
-        if (i < 8) {
-            for (var j=0; j<64; j++) {
-                v[i][j] <== h[i][j];
-            }
-        } 
-        else {
-            iv[i] = blake2b_iv(i-8);
+    for (var i=0; i<8; i++) {
+        for (var j=0; j<64; j++) {
+            v[i][j] <== h[i][j];
+        }
+    }
+    for (var i=8; i<16; i++) {
+        iv[i-8] = blake2b_iv(i-8);
 
-            for (var j=0; j<64; j++) {
-                if (i != 12 && (i != 14 || last == 0)){
-                    v[i][j] <== iv[i][j];
-                }
-                if (i == 12) {
-                    xor[0].a[j] <== iv[i][j];
-                    xor[0].b[j] <== t0[j];
-                    v[12][j] <== xor[0].out[j];
-                }
-                if (i == 14 && last == 1) {
-                    not.in[j] <== iv[i][j];
-                    v[14][j] <== iv[i][j];
-                }
+        for (var j=0; j<64; j++) {
+            if (i != 12 && (i != 14 || last == 0)){
+                v[i][j] <== iv[i-8][j];
+            }
+            if (i == 12) {
+                xor.a[j] <== iv[i-8][j];
+                xor.b[j] <== t0[j];
+            }
+            if (i == 14 && last == 1) {
+                not.in[j] <== iv[i-8][j];
             }
         }
+    }
+    for (var j=0; j<64; j++) {
+        v[12][j] <== xor.out[j];
+        v[14][j] <== not.out[j];
     }
 
     component get64[16];
