@@ -1,15 +1,30 @@
 pragma circom 2.0.0;
 
-template blake2b_iv(x) {
-    signal output out[64];
+function blake2b_iv(x) {
     var iv[8] = [0x6a09e667f3bcc908, 0xbb67ae8584caa73b,
                 0x3c6ef372fe94f82b, 0xa54ff53a5f1d36f1,
                 0x510e527fade682d1, 0x9b05688c2b3e6c1f,
                 0x1f83d9abfb41bd6b, 0x5be0cd19137e2179];
 
+    var bits[64];
     for (var i=0; i<64; i++) {
-        out[i] <== (iv[x] >> i) & 1;
+        bits[i] = (iv[x] >> i) & 1;
     }
+
+    return bits;
+}
+
+function iv_init0() {
+    var iv0 = 0x6a09e667f3bcc908;
+    var bits[64];
+
+    iv0 = iv0 ^ (0x01010000 | 0 | 32);
+    
+    for (var i=0; i<64; i++) {
+        bits[i] = (iv0 >> i) & 1;
+    }
+
+    return bits;
 }
 
 template rotr64(c) {
@@ -72,7 +87,7 @@ template not64() {
     signal output out[64];
 
     for (var i=0; i<64; i++) {
-        out[i] <== 1 + in[i] - 2*in[i];
+        out[i] <== 1 - in[i];
     }
 }
 
@@ -105,7 +120,7 @@ template G(a,b,c,d,x,y) {
         }
     }
 
-    var tmpa, tmpb, tmpc, tmpd;
+    signal tmpa[64], tmpb[64], tmpc[64], tmpd[64];
     component xor[4], rot[4];
     
     xor[0] = xor64();
@@ -117,34 +132,57 @@ template G(a,b,c,d,x,y) {
     rot[2] = rotr64(16);
     rot[3] = rotr64(63);
 
-    tmpa <== v[a] + v[b] + x;
+    for (var i=0; i<64; i++) {
+        tmpa[i] <== v[a][i] + v[b][i] + (x >> i) & 1;
+    }
+
+    for (var i=0; i<64; i++) {
+        xor[0].a[i] <== tmpa[i];
+        xor[0].b[i] <== v[d][i];
+        rot[0].in[i] <== xor[0].out[i];
+    }
+    for (var i=0; i<64; i++) {
+        tmpd[i] <== rot[0].out[i];
+    }
     
-    xor[0].in <== tmpa;
-    xor[0].in <== v[d];
-    rot[0].in <== xor[0].out;
-    tmpd <== rot[0].out;
+    for (var i=0; i<64; i++) {
+        tmpc[i] <== v[c][i] + tmpd[i];
+    }
 
-    tmpc <== v[c] + tmpd;
+    for (var i=0; i<64; i++) {
+        xor[1].a[i] <== v[b][i];
+        xor[1].b[i] <== tmpc[i];
+        rot[1].in[i] <== xor[1].out[i];
+    }
+    for (var i=0; i<64; i++) {
+        tmpb[i] <== rot[1].out[i];
+    }
+    
+    for (var i=0; i<64; i++) {
+        v_out[a][i] <== tmpa[i] + tmpb[i] + (y >> i) & 1;
+    }
 
-    xor[1].in <== v[b];
-    xor[1].in <== tmpc;
-    rot[1].in <== xor[1].out;
-    tmpb <== rot[1].out;
+    for (var i=0; i<64; i++) {
+        xor[2].a[i] <== v_out[a][i];
+        xor[2].b[i] <== tmpd[i];
+        rot[2].in[i] <== xor[2].out[i];
+    }
+    for (var i=0; i<64; i++) {
+        v_out[d][i] <== rot[2].out[i];
+    }
 
-    v_out[a] <== tmpa + tmpb + y;
+    for (var i=0; i<64; i++) {
+        v_out[c][i] <== tmpc[i] + v_out[d][i];
+    }
 
-    xor[2].in <== v_out[a];
-    xor[2].in <== tmpd;
-    rot[2].in <== xor[2].out;
-    v_out[d] <== rot[2].out;
-
-    v_out[c] <== tmpc + v_out[d];
-
-    xor[3].in <== tmpb;
-    xor[3].in <== v_out[c];
-    rot[3].in <== xor[3].out;
-    v_out[b] <== rot[3].out;
-
+    for (var i=0; i<64; i++) {
+        xor[3].a[i] <== tmpb[i];
+        xor[3].b[i] <== v_out[c][i];
+        rot[3].in[i] <== xor[3].out[i];
+    }
+    for (var i=0; i<64; i++) {
+        v_out[b][i] <== rot[3].out[i];
+    }
 }
 
 // All 12 rounds
@@ -193,14 +231,14 @@ template rounds() {
 template blake2b_compress(last) {
     signal input b[128][8];
     signal input h[8][64];
-    signal input t[2][64];
+    signal input t0[64];
 
     signal output h_out[8][64];
 
     component Rounds = rounds();
-    component iv[8];
+    var iv[8][64];
 
-    var v[16][64], m[16][64];
+    signal v[16][64], m[16][64];
 
     component xor[2];
     xor[0] = xor64();
@@ -215,25 +253,20 @@ template blake2b_compress(last) {
             }
         } 
         else {
-            iv = blake2b_iv(i-8);
+            iv[i] = blake2b_iv(i-8);
 
             for (var j=0; j<64; j++) {
-                if (i != 12 && i != 13 && (i != 14 || last == 0)){
-                    v[i][j] <== iv.out[j];
+                if (i != 12 && (i != 14 || last == 0)){
+                    v[i][j] <== iv[i][j];
                 }
                 if (i == 12) {
-                    xor[0].in <== iv.out[j];
-                    xor[0].in <== t[0][j];
-                    v[12][j] <== xor[0].out;
-                }
-                if (i == 13) {
-                    xor[1].in <== iv.out[j];
-                    xor[1].in <== t[1][j];
-                    v[13][j] <== xor[1].out;
+                    xor[0].a[j] <== iv[i][j];
+                    xor[0].b[j] <== t0[j];
+                    v[12][j] <== xor[0].out[j];
                 }
                 if (i == 14 && last == 1) {
-                    not.in <== iv.out[j];
-                    v[14][j] <== iv.out[j];
+                    not.in[j] <== iv[i][j];
+                    v[14][j] <== iv[i][j];
                 }
             }
         }
@@ -245,7 +278,7 @@ template blake2b_compress(last) {
 
         for (var j=0; j<128; j++) {
             for (var k=0; k<8; k++) {
-                get64[i].in[j][k] <== b[j][k];
+                get64[i].b[j][k] <== b[j][k];
             }
         }
 
@@ -264,7 +297,7 @@ template blake2b_compress(last) {
     component xor3[8];
 
     for (var i=0; i<8; i++) {
-        xor3[i] = xor64();
+        xor3[i] = xor3();
         for (var j=0; j<64; j++) {
             xor3[i].a[j] <== h[i][j];
             xor3[i].b[j] <== Rounds.v_out[i][j];
@@ -276,67 +309,80 @@ template blake2b_compress(last) {
     }
 }
 
-template blake2b_init() {
-    signal output h[8][64];
-    signal output t[2][64];
-    signal output b[128][8];
+function blake2b_init() {
+    var h[8][64];
 
-    component iv[8];
-
-    for (var i=1; i<8; i++) {
-        iv = blake2b_iv(i);
+    for (var i=0; i<8; i++) {
+        var tmp[64] = blake2b_iv(i);
         for (var j=0; j<64; j++) {
-            h[i][j] <== iv.out[j];
+            h[i][j] = tmp[j];
         }
     }
-    
-    component xor = xor64();
-    for (var i=0; i<64; i++) {
-        xor.a[i] <== iv.out[i];
-        xor.b[i] <== ((0x01010000 | 0 | 32) >> i) & 1;
-    }
-    for (var i=0; i<64; i++) {
-        h[0][i] <== xor.out[i];
+    var tmp[64] = iv_init0();
+    for (var j=0; j<64; j++) {
+        h[0][j] = tmp[j];
     }
 
-    for (var i=0; i<2; i++) {
-        for (var j=0; j<64; j++) {
-            t[i][j] <== 0;
-        }
-    }
-    
-    for (var i=0; i<128; i++) {
-        for (var j=0; j<8; j++) {
-            b[i][j] <== 0;
-        }
-    }
+    return h;
 }
 
-template blake2b_update(inLen) {
+template blake2b(inLen) {
     signal input in[inLen][8];
-    signal input b[128][8];
-    signal input h[8][64];
-    signal input t[2][64];
-    signal input c;
+    signal output out[32][8];
 
-    signal output h_out[8][64];
-    signal output t_out[2][64];
-    signal output b_out[128][8];
-    signal output c_out;
+    var nBlocks = (inLen % 128 == 0) ? (inLen >> 7) : ((inLen >> 7) + 1);
 
-    var tmpt[2][64], tmpb[128][8], tmpc;
+    signal pad_in[nBlocks*128][8];
 
     for (var i=0; i<inLen; i++) {
-
+        for (var j=0; j<8; j++) {
+            pad_in[i][j] <== in[i][j];
+        }
+    }
+    for (var i=inLen; i<nBlocks*128; i++) {
+        for (var j=0; j<8; j++) {
+            pad_in[i][j] <== 0;
+        }
     }
 
+    var h_init[8][64] = blake2b_init();
+
+    component comp[nBlocks];
+
+    for (var i=0; i<nBlocks; i++){
+        if (i == nBlocks-1)
+            comp[i] = blake2b_compress(1);
+        else
+            comp[i] = blake2b_compress(1);
+
+        for (var j=0; j<128; j++) {
+            for (var k=0; k<8; k++) {
+                comp[i].b[j][k] <== pad_in[i*128 + j][k];
+            }
+        }
+
+        for (var j=0; j<8; j++) {
+            for (var k=0; k<64; k++) {
+                if (i == 0)
+                    comp[i].h[j][k] <== h_init[j][k];
+                else
+                    comp[i].h[j][k] <== comp[i-1].h_out[j][k];
+            }
+        }
+        
+        for (var k=0; k<64; k++) {
+            comp[i].t0[k] <== (128*i >> k) & 1;
+        }
+    }
+
+    for (var i=0; i<32; i++) {
+        for (var j=0; j<8; j++) {
+            out[i][j] <== comp[nBlocks-1].h_out[i >> 3][j + 8*(i % 8)];
+        }
+    }
+
+    log("aaa");
+
 }
 
-template blake2b_final() {
-    signal input b[128][8];
-    signal input h[8][64];
-    signal input t[2][64];
-    signal input c;
-
-    signal output out[32][8];
-}
+component main = blake2b(1024);
