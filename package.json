@@ -17,6 +17,10 @@
   },
   "homepage": "https://github.com/bunny-sleepy/private-bridge-zcash-ethereum#readme",
   "dependencies": {
-    "circomlib": "^2.0.5"
+    "circomlib": "^2.0.5",
+    "hardhat": "^2.14.0"
+  },
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "^2.0.2"
   }
 }
