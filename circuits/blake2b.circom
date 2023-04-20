@@ -8,7 +8,7 @@ template blake2b_iv(x) {
                 0x1f83d9abfb41bd6b, 0x5be0cd19137e2179];
 
     for (var i=0; i<64; i++) {
-        out[i] <== (c[x] >> i) & 1;
+        out[i] <== (iv[x] >> i) & 1;
     }
 }
 
@@ -16,8 +16,8 @@ template rotr64(c) {
     signal input in[64];
     signal output out[64];
 
-    for (var i=0; i<n; i++) {
-        out[i] <== in[ (i+r)%n ];
+    for (var i=0; i<64; i++) {
+        out[i] <== in[ (i+c)%64 ];
     }
 }
 
@@ -26,10 +26,10 @@ template shiftr64(c) {
     signal output out[64];
 
     for (var i=0; i<64; i++) {
-        if (i+r >= n) {
+        if (i+c >= 64) {
             out[i] <== 0;
         } else {
-            out[i] <== in[ i+r ];
+            out[i] <== in[ i+c ];
         }
     }
 }
@@ -154,7 +154,7 @@ template rounds() {
     signal output v_out[16][64];
 
     component G[12][8];
-    var tmpv[12][16][64];
+    signal tmpv[12][16][64];
 
     for (var l=0; l<16; l++) {
         tmpv[0][l] <== v[l];
@@ -163,7 +163,9 @@ template rounds() {
     for (var k=0; k<12; k++) {
         if(k != 0){
             for (var l=0; l<16; l++) {
-                tmpv[k][l] <== G[k-1][l].v_out;
+                for (var i=0; i<64; i++) {
+                    tmpv[k][l][i] <== tmpv[k-1][l][i];
+                }
             }
         }
 
@@ -275,13 +277,66 @@ template blake2b_compress(last) {
 }
 
 template blake2b_init() {
+    signal output h[8][64];
+    signal output t[2][64];
+    signal output b[128][8];
+
+    component iv[8];
+
+    for (var i=1; i<8; i++) {
+        iv = blake2b_iv(i);
+        for (var j=0; j<64; j++) {
+            h[i][j] <== iv.out[j];
+        }
+    }
     
+    component xor = xor64();
+    for (var i=0; i<64; i++) {
+        xor.a[i] <== iv.out[i];
+        xor.b[i] <== ((0x01010000 | 0 | 32) >> i) & 1;
+    }
+    for (var i=0; i<64; i++) {
+        h[0][i] <== xor.out[i];
+    }
+
+    for (var i=0; i<2; i++) {
+        for (var j=0; j<64; j++) {
+            t[i][j] <== 0;
+        }
+    }
+    
+    for (var i=0; i<128; i++) {
+        for (var j=0; j<8; j++) {
+            b[i][j] <== 0;
+        }
+    }
 }
 
-template blake2b_update() {
+template blake2b_update(inLen) {
+    signal input in[inLen][8];
+    signal input b[128][8];
+    signal input h[8][64];
+    signal input t[2][64];
+    signal input c;
+
+    signal output h_out[8][64];
+    signal output t_out[2][64];
+    signal output b_out[128][8];
+    signal output c_out;
+
+    var tmpt[2][64], tmpb[128][8], tmpc;
+
+    for (var i=0; i<inLen; i++) {
+
+    }
 
 }
 
 template blake2b_final() {
+    signal input b[128][8];
+    signal input h[8][64];
+    signal input t[2][64];
+    signal input c;
 
+    signal output out[32][8];
 }
