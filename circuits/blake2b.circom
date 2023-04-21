@@ -18,7 +18,7 @@ function iv_init0() {
     var iv0 = 0x6a09e667f3bcc908;
     var bits[64];
 
-    iv0 = iv0 ^ (0x01010000 | 0 | 32);
+    iv0 = iv0 ^ 0x01010020;
     
     for (var i=0; i<64; i++) {
         bits[i] = (iv0 >> i) & 1;
@@ -91,6 +91,39 @@ template not64() {
     }
 }
 
+function nbits(a) {
+    var n = 1;
+    var r = 0;
+    while (n-1<a) {
+        r++;
+        n *= 2;
+    }
+    return r;
+}
+
+template BinSum(n, ops) {
+    var nout = nbits((2**n -1)*ops);
+    signal input in[ops][n];
+    signal output out[nout];
+    
+    var sum;
+    var carry = 0;
+    var i,j;
+
+    for(i=0; i<nout; i++) {
+        sum = 0;
+        for(j=0; j<ops; j++) {
+            sum += (i < n) ? in[j][i] : 0;
+        }
+        sum += carry;
+        carry = sum >> 1;
+        out[i] <-- sum & 1;
+
+        out[i] * (1 - out[i]) === 0;
+    }
+
+}
+
 function sigma(a,b) {
     var sigma[12][16] = [
            [ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15 ],
@@ -136,8 +169,19 @@ template G(a,b,c,d) {
     rot[2] = rotr64(16);
     rot[3] = rotr64(63);
 
+    component bs[4];
+    bs[0] = BinSum(64, 3);
+    bs[1] = BinSum(64, 2);
+    bs[2] = BinSum(64, 3);
+    bs[3] = BinSum(64, 2);
+
     for (var i=0; i<64; i++) {
-        tmpa[i] <== v[a][i] + v[b][i] + x[i];
+        bs[0].in[0][i] <== v[a][i];
+        bs[0].in[1][i] <== v[b][i];
+        bs[0].in[2][i] <== x[i];
+    }
+    for (var i=0; i<64; i++) {
+        tmpa[i] <== bs[0].out[i];
     }
 
     for (var i=0; i<64; i++) {
@@ -152,7 +196,11 @@ template G(a,b,c,d) {
     }
     
     for (var i=0; i<64; i++) {
-        tmpc[i] <== v[c][i] + tmpd[i];
+        bs[1].in[0][i] <== v[c][i];
+        bs[1].in[1][i] <== tmpd[i];
+    }
+    for (var i=0; i<64; i++) {
+        tmpc[i] <== bs[1].out[i];
     }
 
     for (var i=0; i<64; i++) {
@@ -167,7 +215,12 @@ template G(a,b,c,d) {
     }
     
     for (var i=0; i<64; i++) {
-        v_out[a][i] <== tmpa[i] + tmpb[i] + y[i];
+        bs[2].in[0][i] <== tmpa[i];
+        bs[2].in[1][i] <== tmpb[i];
+        bs[2].in[2][i] <== y[i];
+    }
+    for (var i=0; i<64; i++) {
+        v_out[a][i] <== bs[2].out[i];
     }
 
     for (var i=0; i<64; i++) {
@@ -182,7 +235,11 @@ template G(a,b,c,d) {
     }
 
     for (var i=0; i<64; i++) {
-        v_out[c][i] <== tmpc[i] + v_out[d][i];
+        bs[3].in[0][i] <== tmpc[i];
+        bs[3].in[1][i] <== v_out[d][i];
+    }
+    for (var i=0; i<64; i++) {
+        v_out[c][i] <== bs[3].out[i];
     }
 
     for (var i=0; i<64; i++) {
