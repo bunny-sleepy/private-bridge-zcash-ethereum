@@ -69,7 +69,7 @@ contract Example {
         // 3. mint tokens if pass
         _token.mint(onBehalfOf, value);
     }
-
+    // (value, address, root)
     function Burn(address onBehalfOf, uint256 index) external {
         require(_isValidLockAddress[onBehalfOf][index] == true);
         uint256 value = _lockValue[onBehalfOf][index];
