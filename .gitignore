@@ -1,3 +1,4 @@
+/tests/circuits/.output/
 /node_modules
 /main_cpp
 *.r1cs

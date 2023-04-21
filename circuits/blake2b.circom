@@ -54,7 +54,7 @@ template get64(loc) {
     signal output out[64];
 
     for (var i=0; i<64; i++) {
-        out[i] <== b[loc + (i >> 3)][i % 3];
+        out[i] <== b[loc + (i >> 3)][i % 8];
     }
 }
 
@@ -207,17 +207,12 @@ template rounds() {
     signal tmpv[12][16][64];
 
     for (var l=0; l<16; l++) {
-        tmpv[0][l] <== v[l];
+        for (var i=0; i<64; i++) {
+            tmpv[0][l][i] <== v[l][i];
+        }
     }
 
     for (var k=0; k<12; k++) {
-        if(k != 0){
-            for (var l=0; l<16; l++) {
-                for (var i=0; i<64; i++) {
-                    tmpv[k][l][i] <== tmpv[k-1][l][i];
-                }
-            }
-        }
 
         G[k][0] = G(0, 4, 8, 12);
         G[k][1] = G(1, 5, 9, 13);
@@ -235,15 +230,56 @@ template rounds() {
             }
         }
 
-        for (var j = 0; j < 8; j++) {
-            for (var l = 0; l < 16; l++) {
-                G[k][j].v[l] <== tmpv[k][l];
+        for (var j=0; j<16; j++) {
+            for (var i=0; i<64; i++) {
+                G[k][0].v[j][i] <== tmpv[k][j][i];
             }
         }
-    }
-
-    for (var l=0; l<16; l++) {
-        v_out[l] <== tmpv[11][l];
+        for (var j=0; j<16; j++) {
+            for (var i=0; i<64; i++) {
+                G[k][1].v[j][i] <== G[k][0].v_out[j][i];
+            }
+        }
+        for (var j=0; j<16; j++) {
+            for (var i=0; i<64; i++) {
+                G[k][2].v[j][i] <== G[k][1].v_out[j][i];
+            }
+        }
+        for (var j=0; j<16; j++) {
+            for (var i=0; i<64; i++) {
+                G[k][3].v[j][i] <== G[k][2].v_out[j][i];
+            }
+        }
+        for (var j=0; j<16; j++) {
+            for (var i=0; i<64; i++) {
+                G[k][4].v[j][i] <== G[k][3].v_out[j][i];
+            }
+        }
+        for (var j=0; j<16; j++) {
+            for (var i=0; i<64; i++) {
+                G[k][5].v[j][i] <== G[k][4].v_out[j][i];
+            }
+        }
+        for (var j=0; j<16; j++) {
+            for (var i=0; i<64; i++) {
+                G[k][6].v[j][i] <== G[k][5].v_out[j][i];
+            }
+        }
+        for (var j=0; j<16; j++) {
+            for (var i=0; i<64; i++) {
+                G[k][7].v[j][i] <== G[k][6].v_out[j][i];
+            }
+        }
+        for (var j=0; j<16; j++) {
+            for (var i=0; i<64; i++) {
+                if (k != 11) {
+                    tmpv[k+1][j][i] <== G[k][7].v_out[j][i];
+                }
+                else {
+                    v_out[j][i] <== G[k][7].v_out[j][i];
+                }
+            }
+        }
     }
 }
 
@@ -270,8 +306,11 @@ template blake2b_compress(last) {
         }
     }
     for (var i=8; i<16; i++) {
-        iv[i-8] = blake2b_iv(i-8);
-
+        for (var j=0; j<64; j++) {
+            var tmp[64] = blake2b_iv(i-8);
+            iv[i-8][j] = tmp[j];
+        }
+        
         for (var j=0; j<64; j++) {
             if (i != 12 && (i != 14 || last == 0)){
                 v[i][j] <== iv[i-8][j];
@@ -398,9 +437,4 @@ template blake2b(inLen) {
             out[i][j] <== comp[nBlocks-1].h_out[i >> 3][j + 8*(i % 8)];
         }
     }
-
-    log("aaa");
-
 }
-
-component main = blake2b(1024);
