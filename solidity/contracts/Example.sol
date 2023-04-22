@@ -50,7 +50,10 @@ contract Example {
     function VerifyAndMint(
         address onBehalfOf,
         uint256 index,
-        bytes calldata txData,
+        uint[2] memory a,
+        uint[2][2] memory b,
+        uint[2] memory c,
+        uint[68] memory input,
         uint256 blockNumber
     ) external returns (bool) {
         // 0. TODO: get value, pubKeyHash of lockAddress from txData
@@ -65,6 +68,8 @@ contract Example {
         _lockValue[user][index] = value;
 
         // 2. TODO: convert txData to SNARK verifier input
+        bool verifyResult = _verifier.verifyProof(a, b, c, input);
+        require(verifyResult == true);
 
         // 3. mint tokens if pass
         _token.mint(onBehalfOf, value);
@@ -77,5 +82,6 @@ contract Example {
         address user = msg.sender;
         _token.burn(user, value);
         // TODO: call zkBridge to unlock in ZCash chain
+        _isValidLockAddress[onBehalfOf][index] = false;
     }
 }
