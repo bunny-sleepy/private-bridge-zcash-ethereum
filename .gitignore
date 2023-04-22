@@ -6,3 +6,4 @@ artifacts/
 cache/
 output/
 powers_of_tau/
+/circom/tests/
