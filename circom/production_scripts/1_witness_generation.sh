@@ -1,5 +1,5 @@
 CIRCUIT_NAME=main
-INPUT_PATH=./tests/data/proof.json
+INPUT_PATH=./input.json
 
 # 1. generate witness
 echo "****WITNESS GENERATION****"
