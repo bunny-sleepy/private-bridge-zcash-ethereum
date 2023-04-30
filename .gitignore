@@ -1,8 +1,10 @@
 .output/
 /node_modules
-main_cpp/
+example_cpp/
 *.r1cs
 *.sym
+*.log
+*.wtns
 artifacts/
 cache/
 output/

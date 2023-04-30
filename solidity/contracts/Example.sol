@@ -174,7 +174,7 @@ contract Example {
         _lockValue[user][input.index] = value;
 
         // 2. TODO: convert txData to SNARK verifier input
-        uint[68] memory tmp;
+        uint[480] memory tmp;
         bool verifyResult = _verifier.verifyProof(input.a, input.b, input.c, tmp);
         require(verifyResult == true);
 

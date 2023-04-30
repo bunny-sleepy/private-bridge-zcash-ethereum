@@ -1,6 +1,6 @@
 CIRCUIT_NAME=example
 ORDER=19
-POT_PATH=./powers_of_tau/powersOfTau28_hez_final
+POT_PATH=./powers_of_tau/powersOfTau19
 ZKEY_PATH=./powers_of_tau
 
 # 3. generate zkey_0 without contribution

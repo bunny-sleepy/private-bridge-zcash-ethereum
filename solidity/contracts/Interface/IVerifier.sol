@@ -6,6 +6,6 @@ interface IVerifier {
         uint[2] memory a,
         uint[2][2] memory b,
         uint[2] memory c,
-        uint[68] memory input
+        uint[480] memory input
     ) external view returns (bool r);
 }

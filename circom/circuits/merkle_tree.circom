@@ -4,7 +4,7 @@ include "./sha256d.circom";
 
 // nBits: leaf node bit number
 template MerkleTree(depth, nBitsLeaf, nBitsNeighbor) {
-    signal output root[256];
+    signal input root[256];
     signal input merklePath[depth - 1][256];
     // leaf we what to commit to
     signal input leaf[nBitsLeaf];
@@ -74,6 +74,6 @@ template MerkleTree(depth, nBitsLeaf, nBitsNeighbor) {
         }
     }
     for (i = 0; i < 256; i++) {
-        root[i] <== hash[depth-1][i];
+        root[i] === hash[depth-1][i];
     }
 }

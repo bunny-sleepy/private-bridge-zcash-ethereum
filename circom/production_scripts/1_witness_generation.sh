@@ -1,5 +1,5 @@
 CIRCUIT_NAME=example
-INPUT_PATH=./input.json
+INPUT_PATH=./mock_input.json
 
 # 1. generate witness
 echo "****WITNESS GENERATION****"
