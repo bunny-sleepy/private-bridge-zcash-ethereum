@@ -118,8 +118,9 @@ template open(depth, bytesBefore, bytesBetween, bytesAfter) {
 
 
 // experimental setup
-// value = 20000, consensus_branch_id = 0, all blake2b256 digest inputs are digest("abc"), and all intermediate bytes are 1 byte 0x00
-// publicKeyHash (hex) = 662ad25db00e7bb38bc04831ae48b4b446d12698, corresponding to address (base58) 1AKDDsfTh8uY4X3ppy1m7jw1fVMBSMkzjP
+// value = 20000, note that in ZCash Transparent / Bitcoin the values in tx_out follows little-endian, so this is 20 4e 00 00 00 00 00 00
+// consensus_branch_id = 0, all blake2b256 digest inputs are digest("abc"), and all intermediate bytes are 1 byte 0x00
+// publicKeyHash (hex) = 662ad25db00e7bb38bc04831ae48b4b446d12698, corresponding to address (base58) 1AKDDsfTh8uY4X3ppy1m7jw1fVMBSMkzjP or (hex) 00662ad25db00e7bb38bc04831ae48b4b446d1269817d515b6
 // depth=2, neighbor: blake2b("abc") and path: sha256d("abc")
 component main {public [root, value, pubKeyHash]} = open(2, 1, 1, 1);
 // component main = open(2, 1, 1, 1);

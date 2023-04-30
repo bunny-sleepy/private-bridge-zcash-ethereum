@@ -12,26 +12,31 @@ async function main() {
     const [deployer] = await hre.ethers.getSigners();
     console.log("Deployer address: ", deployer.address);
 
-    // 2. Deploy the mock ZEC
+    // 2. Deploy libraries
+    const Base58 = await hre.ethers.getContractFactory("Base58");
+    let base58 = await Base58.deploy();
+    await base58.deployed();
+
+    // 3. Deploy the mock ZEC
     const MockToken = await hre.ethers.getContractFactory("MockToken");
-    let ZEC = await MockERC20.deploy("ZEC", "ZEC", 18);
+    let ZEC = await MockToken.deploy("ZEC", "ZEC", 18);
     await ZEC.deployed();
     console.log("ZEC Address: ", ZEC.address);
 
-    // 3. Deploy the verifier
+    // 4. Deploy the verifier
     const Verifier = await hre.ethers.getContractFactory("Verifier");
     let verifier = await Verifier.deploy();
     await verifier.deployed();
     console.log("Verifier Address: ", verifier.address);
 
-    // 4. Deploy the zkBridge
+    // 5. Deploy the zkBridge
     const MockBridge = await hre.ethers.getContractFactory("MockBridge");
     let bridge = await MockBridge.deploy();
     await bridge.deployed();
     console.log("Bridge Address: ", bridge.address);
 
-    // 5. Deploy the main contract
-    const Example = await hre.ethers.getContractFactory("Example");
+    // 6. Deploy the main contract
+    const Example = await hre.ethers.getContractFactory("Example", {libraries: {Base58: base58.address}});
     let example = await Example.deploy(ZEC.address, verifier.address, bridge.address, [deployer.address]);
     await example.deployed();
     console.log("Example Address: ", example.address);

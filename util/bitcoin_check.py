@@ -3,7 +3,6 @@ import hashlib
 
 def checkBitcoinAddressConsistency(bitcoinAddress, scriptPubKeyHash):
     decodedAddress = base58.b58decode(bitcoinAddress)
-    print(type(decodedAddress))
     print(decodedAddress.hex())
     print(len(decodedAddress.hex()))
     # Check that the address starts with "1" or "3"
@@ -18,5 +17,6 @@ def checkBitcoinAddressConsistency(bitcoinAddress, scriptPubKeyHash):
     # Check that the decoded hash matches the script public key hash
     return addressHash == scriptPubKeyHash
 
-bitcoinAddress = "1BvBMSEYstWetqTFn5Au4m4GFg7xJaNVN2"
-checkBitcoinAddressConsistency(bitcoinAddress, "")
+bitcoinAddress = "1AKDDsfTh8uY4X3ppy1m7jw1fVMBSMkzjP"
+pubKeyHash = "662ad25db00e7bb38bc04831ae48b4b446d12698"
+checkBitcoinAddressConsistency(bitcoinAddress, pubKeyHash)
