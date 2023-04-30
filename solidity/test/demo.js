@@ -39,7 +39,7 @@ describe("Example Contract", function () {
         const Example = await hre.ethers.getContractFactory("Example", {libraries: {Base58: base58.address}});
         let example = await Example.deploy(ZEC.address, verifier.address, bridge.address, [deployer.address]);
         await example.deployed();
-        
+
         // return
         return { example, deployer };
     }
@@ -47,12 +47,14 @@ describe("Example Contract", function () {
     describe("Byte Conversions", function () {
         it("Correctly convert ZCash transparent address to public key hash", async function () {
             const { example, deployer } = await loadFixture(deployFixture);
-            const pubKeyHash = example.bitcoin_address_to_pubkeyhash("1AKDDsfTh8uY4X3ppy1m7jw1fVMBSMkzjP");
-            expect(pubKeyHash.equal("662ad25db00e7bb38bc04831ae48b4b446d12698"));
+            const pubKeyHash = await example.bitcoin_address_to_pubkeyhash("1AKDDsfTh8uY4X3ppy1m7jw1fVMBSMkzjP");
+            expect(pubKeyHash).to.equal("0x662ad25db00e7bb38bc04831ae48b4b446d12698");
         });
 
         it("Correctly convert uint64 to little-endian bytes", async function () {
             const { example, deployer } = await loadFixture(deployFixture);
+            const valueBytesLE = await example.uint64_to_bytes_le(20000);
+            expect(valueBytesLE).to.equal("0x204e000000000000");
         });
     });
 
