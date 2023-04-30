@@ -91,7 +91,7 @@ template not64() {
     }
 }
 
-function nbits(a) {
+function nbits_blake2b(a) {
     var n = 1;
     var r = 0;
     while (n-1<a) {
@@ -101,8 +101,8 @@ function nbits(a) {
     return r;
 }
 
-template BinSum(n, ops) {
-    var nout = nbits((2**n -1)*ops);
+template BinSumBlake2b(n, ops) {
+    var nout = nbits_blake2b((2**n -1)*ops);
     signal input in[ops][n];
     signal output out[nout];
     
@@ -170,10 +170,10 @@ template G(a,b,c,d) {
     rot[3] = rotr64(63);
 
     component bs[4];
-    bs[0] = BinSum(64, 3);
-    bs[1] = BinSum(64, 2);
-    bs[2] = BinSum(64, 3);
-    bs[3] = BinSum(64, 2);
+    bs[0] = BinSumBlake2b(64, 3);
+    bs[1] = BinSumBlake2b(64, 2);
+    bs[2] = BinSumBlake2b(64, 3);
+    bs[3] = BinSumBlake2b(64, 2);
 
     for (var i=0; i<64; i++) {
         bs[0].in[0][i] <== v[a][i];

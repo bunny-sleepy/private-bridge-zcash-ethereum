@@ -2,6 +2,7 @@
 /node_modules
 main_cpp/
 *.r1cs
+*.sym
 artifacts/
 cache/
 output/

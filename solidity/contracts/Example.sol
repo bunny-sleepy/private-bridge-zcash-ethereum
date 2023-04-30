@@ -180,7 +180,10 @@ contract Example {
 
         // 3. mint tokens if pass
         _token.mint(input.onBehalfOf, value);
+
+        return verifyResult;
     }
+
     // (value, address, root)
     function Burn(address onBehalfOf, uint256 index) external {
         require(_isValidLockAddress[onBehalfOf][index] == true);

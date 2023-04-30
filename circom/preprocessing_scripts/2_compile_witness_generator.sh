@@ -1,4 +1,4 @@
-CIRCUIT_NAME=main
+CIRCUIT_NAME=example
 
 # 2. compile witness generator
 echo "****COMPILING WITNESS GENERATOR****"

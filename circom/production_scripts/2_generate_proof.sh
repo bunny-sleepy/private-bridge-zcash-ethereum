@@ -1,4 +1,4 @@
-CIRCUIT_NAME=main
+CIRCUIT_NAME=example
 INPUT_PATH=./tests/data/proof.json
 ZKEY_PATH=./powers_of_tau
 RAPIDSNARK=./rapidsnark/build/prover

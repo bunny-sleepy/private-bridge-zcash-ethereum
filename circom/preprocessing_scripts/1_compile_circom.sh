@@ -1,4 +1,4 @@
-CIRCUIT_PATH=./circuits/main.circom
+CIRCUIT_PATH=./circuits/example.circom
 
 # 1. compile the circom circuit
 echo "****COMPILING CIRCUIT****"

@@ -1,4 +1,4 @@
-CIRCUIT_NAME=plonky2
+CIRCUIT_NAME=example
 ZKEY_PATH=./powers_of_tau
 
 # 4. contribute to trusted setup ceremony

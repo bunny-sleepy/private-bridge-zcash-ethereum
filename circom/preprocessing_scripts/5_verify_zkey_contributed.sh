@@ -1,4 +1,4 @@
-CIRCUIT_NAME=plonky2
+CIRCUIT_NAME=example
 ORDER=19
 POT_PATH=./powers_of_tau/powersOfTau28_hez_final
 ZKEY_PATH=./powers_of_tau

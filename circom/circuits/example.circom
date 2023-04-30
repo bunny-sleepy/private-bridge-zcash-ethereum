@@ -18,7 +18,7 @@ template open(depth, bytesBefore, bytesBetween, bytesAfter) {
     signal input bytes_after[bytesAfter][8];
 
     // mtp signals
-    signal input root[256];
+    signal output root[256];
     signal input merklePath[depth - 1][256];
     // neighbor of leaf in the last layer
     signal input neighbor[256];
@@ -28,7 +28,6 @@ template open(depth, bytesBefore, bytesBetween, bytesAfter) {
     var i;
     var j;
 
-    
     component tx = zcash_tx_check(bytesBefore, bytesBetween, bytesAfter);
     component mtp = MerkleTree(depth, 256, 256);
     // tx
@@ -100,7 +99,7 @@ template open(depth, bytesBefore, bytesBetween, bytesAfter) {
     
     // inputs
     for (i = 0; i < 256; i++) {
-        mtp.root[i] <== root[i];
+        // mtp.root[i] <== root[i];
         mtp.neighbor[i] <== neighbor[i];
     }
     for (i = 0; i < depth; i++) {
@@ -111,6 +110,15 @@ template open(depth, bytesBefore, bytesBetween, bytesAfter) {
             mtp.merklePath[i][j] <== merklePath[i][j];
         }
     }
+    // NOTE: debugging
+    for (i = 0; i < 256; i++) {
+        root[i] <== mtp.root[i];
+    }
 }
 
-component main {public [root, value, pubKeyHash]} = open(2, 0, 10, 0);
+
+// experimental setup
+// value = 20000, consensus_branch_id = 0, all blake2b256 digest inputs are digest("abc"), and all intermediate bytes are 1 byte 0x00
+// depth=2, neighbor: blake2b("abc") and path: sha256d("abc")
+// component main {public [root, value, pubKeyHash]} = open(2, 0, 10, 0);
+component main = open(2, 1, 1, 1);

@@ -1,6 +1,5 @@
-NODE_PATH=./node/out/Release/node
 SNARKJS_PATH=./snarkjs/cli.js
-CIRCUIT_NAME=plonky2
+CIRCUIT_NAME=example
 OUTPUT_PATH=./output
 
 # 4. test solidity verifier

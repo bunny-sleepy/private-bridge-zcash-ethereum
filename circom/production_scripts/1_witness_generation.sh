@@ -1,4 +1,4 @@
-CIRCUIT_NAME=main
+CIRCUIT_NAME=example
 INPUT_PATH=./input.json
 
 # 1. generate witness
