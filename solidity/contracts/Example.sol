@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: MIT
-pragma solidity >= 0.8.0;
+// pragma solidity >= 0.8.0;
+pragma solidity ^0.6.11;
+pragma experimental ABIEncoderV2;
 
 import {IVerifier} from "./Interface/IVerifier.sol"; 
 import {IzkBridge} from "./Interface/IzkBridge.sol";
@@ -10,6 +12,7 @@ contract Example {
     IMockToken _token;
     IVerifier _verifier;
     IzkBridge _zkBridge;
+    bool _result;
 
     mapping(address => bool) internal _writePermission;
     mapping(address => mapping(uint256 => string)) internal _lockAddress;
@@ -22,10 +25,11 @@ contract Example {
         IVerifier verifier,
         IzkBridge zkBridge,
         address[] memory relayers
-    ) {
+    ) public {
         _token = token;
         _verifier = verifier;
         _zkBridge = zkBridge;
+        _result = false;
         for (uint i = 0; i < relayers.length; i++) {
             _writePermission[relayers[i]] = true;
         }
@@ -47,6 +51,10 @@ contract Example {
 
     function lockAddress(address user, uint256 index) external view returns (string memory) {
         return _lockAddress[user][index];
+    }
+
+    function getResult() external view returns (bool) {
+        return _result;
     }
 
     function bytes_to_uint64_le(bytes memory b) public pure returns (uint64) {
@@ -118,55 +126,43 @@ contract Example {
         require(_isValidLockAddress[user][input.index] == true);
         require(_lockValue[user][input.index] == uint64(0));
         uint64 value = input.value;
-        bytes memory pubKeyHashBytes = bitcoin_address_to_pubkeyhash(_lockAddress[user][input.index]);
-        bytes memory blockHeader = _zkBridge.BlockHeader(input.blockNumber);
+        bytes memory pubKeyHashBytes;
+        pubKeyHashBytes = bitcoin_address_to_pubkeyhash(_lockAddress[user][input.index]);
+        bytes memory blockHeader;
+        blockHeader = _zkBridge.BlockHeader(input.blockNumber);
 
         // 1. get valueBytes
-        bytes memory valueBytes = uint64_to_bytes_le(input.value);
+        bytes memory valueBytes;
+        valueBytes = uint64_to_bytes_le(input.value);
         _lockValue[user][input.index] = value;
 
-        // 2. convert calldata to SNARK verifier input
-        uint[480] memory verifierInput;
-        {
-            uint k = 0;
-            // value
-            for (uint i = 0; i < 8; i++) {
-                for (uint j = 0; j < 8; j++) {
-                    verifierInput[k] = uint256(uint8(valueBytes[i][j]));
-                    k++;
-                }
-            }
-            // pubKeyHash
-            for (uint i = 0; i < 20; i++) {
-                for (uint j = 0; j < 8; j++) {
-                    verifierInput[k] = uint256(uint8(pubKeyHashBytes[i][j]));
-                    k++;
-                }
-            }
-            // root
-            for (uint i = 0; i < 32; i++) {
-                for (uint j = 0; j < 8; j++) {
-                    verifierInput[k] = uint256(uint8(blockHeader[i][j]));
-                    k++;
-                }
-            }
-        }
-        bool verifyResult = _verifier.verifyProof(input.proof.a, input.proof.b, input.proof.c, verifierInput);
-        require(verifyResult == true);
+        // 2. call zkSNARK verifier
+        bool verifyResult = true;
+        verifyResult = _verifier.verifyProofAlt(input.proof.a, input.proof.b, input.proof.c, valueBytes, pubKeyHashBytes, blockHeader);
 
         // 3. mint tokens if pass
-        _token.mint(input.onBehalfOf, value);
+        if (verifyResult == true) {
+            _token.mint(input.onBehalfOf, value);
+        }
+        _result = verifyResult;
 
         return verifyResult;
     }
 
-    function Burn(address onBehalfOf, uint256 index) external {
-        require(_isValidLockAddress[onBehalfOf][index] == true);
-        uint256 value = _lockValue[onBehalfOf][index];
-        require(value > 0);
+    function Burn(address onBehalfOf, uint256 index) external returns (bool res) {
+        if (_isValidLockAddress[onBehalfOf][index] != true) {
+            res = false;
+        }
+        uint64 value = _lockValue[onBehalfOf][index];
+        if (value == 0) {
+            res = false;
+        }
         address user = msg.sender;
         _token.burn(user, value);
         _isValidLockAddress[onBehalfOf][index] = false;
         // TODO: call zkBridge to unlock in ZCash chain
+
+        res = true;
+        _result = res;
     }
 }

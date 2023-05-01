@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.7;
+// pragma solidity ^0.8.7;
+pragma solidity ^0.6.11;
 
 /**
  * @title Base58
@@ -17,7 +18,7 @@ library Base58 {
      * @return base58 encoded data_, returned as bytes.
      */
     function encode(bytes memory data_) public pure returns (bytes memory) {
-        unchecked {
+        {
             uint256 size = data_.length;
             uint256 zeroCount;
             while (zeroCount < size && data_[zeroCount] == 0) {
@@ -55,7 +56,7 @@ library Base58 {
      * @return raw data, returned as bytes.
      */
     function decode(bytes memory data_) public pure returns (bytes memory) {
-        unchecked {
+        {
             uint256 zero = 49;
             uint256 b58sz = data_.length;
             uint256 zcount = 0;
@@ -150,7 +151,7 @@ library Base58 {
         uint256 start_,
         uint256 end_
     ) public pure returns (bytes memory) {
-        unchecked {
+        {
             bytes memory ret = new bytes(end_ - start_);
             for (uint256 i = 0; i < end_ - start_; i++) {
                 ret[i] = data_[i + start_];
@@ -170,7 +171,7 @@ library Base58 {
         pure
         returns (uint256, bool)
     {
-        unchecked {
+        {
             for (uint256 i = 0; i < data_.length; i++) {
                 if (data_[i] == char_) {
                     return (i, true);

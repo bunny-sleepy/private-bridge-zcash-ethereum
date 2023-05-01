@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
+// pragma solidity ^0.8.0;
+pragma solidity ^0.6.11;
 
 import {Context} from "./Dependency/openzeppelin/Context.sol";
 import {IMockToken} from "./Interface/IMockToken.sol";
@@ -41,7 +42,7 @@ contract MockToken is Context, IMockToken {
     uint8 private _decimals;
     address private mock_swap_address;
 
-    constructor (string memory name_, string memory symbol_, uint8 decimals_)  {
+    constructor (string memory name_, string memory symbol_, uint8 decimals_) public {
         _name = name_;
         _symbol = symbol_;
         _decimals = decimals_;
@@ -256,7 +257,7 @@ contract MockToken is Context, IMockToken {
         emit Transfer(account, address(0), amount);
     }
 
-    function burn(address account, uint256 amount) external {
+    function burn(address account, uint256 amount) external override {
         _burn(account, amount);
     }
 

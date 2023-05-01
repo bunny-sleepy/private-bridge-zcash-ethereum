@@ -11,7 +11,7 @@
 //
 //
 // SPDX-License-Identifier: GPL-3.0
-pragma solidity >= 0.8.0;
+pragma solidity ^0.6.11;
 
 import {IVerifier} from "./Interface/IVerifier.sol";
 library Pairing {
@@ -66,11 +66,11 @@ library Pairing {
         bool success;
         // solium-disable-next-line security/no-inline-assembly
         assembly {
-            success := staticcall(sub(gas(), 2000), 6, input, 0xc0, r, 0x60)
+            success := staticcall(2000, 6, input, 0xc0, r, 0x60)
             // Use "invalid" to make gas estimation work
-            switch success case 0 { invalid() }
+            // switch success case 0 { invalid() }
         }
-        require(success,"pairing-add-failed");
+        // require(success,"pairing-add-failed");
     }
     /// @return r the product of a point on G1 and a scalar, i.e.
     /// p == p.scalar_mul(1) and p.addition(p) == p.scalar_mul(2) for all points p.
@@ -82,11 +82,11 @@ library Pairing {
         bool success;
         // solium-disable-next-line security/no-inline-assembly
         assembly {
-            success := staticcall(sub(gas(), 2000), 7, input, 0x80, r, 0x60)
+            success := staticcall(2000, 7, input, 0x80, r, 0x60)
             // Use "invalid" to make gas estimation work
-            switch success case 0 { invalid() }
+            // switch success case 0 { invalid() }
         }
-        require (success,"pairing-mul-failed");
+        // require (success,"pairing-mul-failed");
     }
     /// @return the result of computing the pairing check
     /// e(p1[0], p2[0]) *  .... * e(p1[n], p2[n]) == 1
@@ -222,7 +222,7 @@ contract Verifier is IVerifier {
         require(input.length + 1 == vk.IC.length,"verifier-bad-input");
         // Compute the linear combination vk_x
         Pairing.G1Point memory vk_x = Pairing.G1Point(0, 0);
-        for (uint i = 0; i < input.length; i++) {
+        for (uint i = 0; i < 480; i++) {
             require(input[i] < snark_scalar_field,"verifier-gte-snark-scalar-field");
             vk_x = Pairing.addition(vk_x, Pairing.scalar_mul(vk.IC[i + 1], input[i]));
         }
@@ -241,7 +241,7 @@ contract Verifier is IVerifier {
             uint[2][2] memory b,
             uint[2] memory c,
             uint[480] memory input
-        ) external view returns (bool r) {
+        ) external override view returns (bool r) {
         Proof memory proof;
         proof.A = Pairing.G1Point(a[0], a[1]);
         proof.B = Pairing.G2Point([b[0][0], b[0][1]], [b[1][0], b[1][1]]);
@@ -251,6 +251,64 @@ contract Verifier is IVerifier {
             inputValues[i] = input[i];
         }
         if (verify(inputValues, proof) == 0) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+    /// @return r  bool true if proof is valid
+    function verifyProofAlt(
+            uint[2] memory a,
+            uint[2][2] memory b,
+            uint[2] memory c,
+            bytes memory valueBytes,
+            bytes memory pubKeyHashBytes,
+            bytes memory rootBytes
+        ) external override view returns (bool r) {
+        Proof memory proof;
+        proof.A = Pairing.G1Point(a[0], a[1]);
+        proof.B = Pairing.G2Point([b[0][0], b[0][1]], [b[1][0], b[1][1]]);
+        proof.C = Pairing.G1Point(c[0], c[1]);
+        uint[] memory verifierInput = new uint[](480);
+        uint k = 0;
+        // value
+        for (uint i = 0; i < 8; i++) {
+            uint8 tmp = uint8(valueBytes[i]);
+            for (uint j = 0; j < 8; j++) {
+                if ((tmp >> (1 << (7 - j))) % 2 == 0) {
+                    verifierInput[k] = 0;
+                } else {
+                    verifierInput[k] = 1;
+                }
+                k++;
+            }
+        }
+        // pubKeyHash
+        for (uint i = 0; i < 20; i++) {
+            uint8 tmp = uint8(pubKeyHashBytes[i]);
+            for (uint j = 0; j < 8; j++) {
+                if ((tmp >> (1 << (7 - j))) % 2 == 0) {
+                    verifierInput[k] = 0;
+                } else {
+                    verifierInput[k] = 1;
+                }
+                k++;
+            }
+        }
+        // root
+        for (uint i = 0; i < 32; i++) {
+            uint8 tmp = uint8(rootBytes[i]);
+            for (uint j = 0; j < 8; j++) {
+                if ((tmp >> (1 << (7 - j))) % 2 == 0) {
+                    verifierInput[k] = 0;
+                } else {
+                    verifierInput[k] = 1;
+                }
+                k++;
+            }
+        }
+
+        if (verify(verifierInput, proof) == 0) {
             return true;
         } else {
             return false;
