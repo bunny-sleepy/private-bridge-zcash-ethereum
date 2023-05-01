@@ -17,11 +17,11 @@ template zcash_tx_check(bytesBefore, bytesBetween, bytesAfter) {
     signal input prevouts_digest[32][8];
     signal input sequence_digest[32][8];
     signal outputs_digest[32][8];
-    signal input bytes_before[bytesBefore][8];
+    signal input bytes_before_value[bytesBefore][8];
     signal input value[8][8];
-    signal input bytes_between[bytesBetween][8];
+    signal input bytes_between_value[bytesBetween][8];
     signal input pubKeyHash[20][8];
-    signal input bytes_after[bytesAfter][8];
+    signal input bytes_after_value[bytesAfter][8];
     signal input sapling_digest[32][8];
     signal input orchard_digest[32][8];
 
@@ -36,11 +36,11 @@ template zcash_tx_check(bytesBefore, bytesBetween, bytesAfter) {
     // followed by the scriptPubKey byte array (serialized as Bitcoin script).
     // The personalization field of this hash is set to: "ZTxIdOutputsHash"
     // signal outputs_digest[32][8];
-    // signal input bytes_before[bytesBefore][8];
+    // signal input bytes_before_value[bytesBefore][8];
     // signal input value[8][8];
-    // signal input bytes_between[bytesBetween][8];
+    // signal input bytes_between_value[bytesBetween][8];
     // signal input pubKeyHash[20][8];
-    // signal input bytes_after[bytesAfter][8];
+    // signal input bytes_after_value[bytesAfter][8];
     var personalization_outputs_digest[16][8] = [[0, 1, 0, 1, 1, 0, 1, 0], [0, 1, 0, 1, 0, 1, 0, 0], [0, 1, 1, 1, 1, 0, 0, 0], [0, 1, 0, 0, 1, 0, 0, 1], [0, 1, 1, 0, 0, 1, 0, 0], [0, 1, 0, 0, 1, 1, 1, 1], [0, 1, 1, 1, 0, 1, 0, 1], [0, 1, 1, 1, 0, 1, 0, 0], [0, 1, 1, 1, 0, 0, 0, 0], [0, 1, 1, 1, 0, 1, 0, 1], [0, 1, 1, 1, 0, 1, 0, 0], [0, 1, 1, 1, 0, 0, 1, 1], [0, 1, 0, 0, 1, 0, 0, 0], [0, 1, 1, 0, 0, 0, 0, 1], [0, 1, 1, 1, 0, 0, 1, 1], [0, 1, 1, 0, 1, 0, 0, 0]];
     component hasher_outputs_digest = blake2b(16+bytesBefore+8+bytesBetween+20+bytesAfter);
     k = 0;
@@ -52,7 +52,7 @@ template zcash_tx_check(bytesBefore, bytesBetween, bytesAfter) {
     }
     for (i = 0; i < bytesBefore; i++) {
         for (j = 0; j < 8; j++) {
-            hasher_outputs_digest.in[k][j] <== bytes_before[i][j];
+            hasher_outputs_digest.in[k][j] <== bytes_before_value[i][j];
         }
         k++;
     }
@@ -64,7 +64,7 @@ template zcash_tx_check(bytesBefore, bytesBetween, bytesAfter) {
     }
     for (i = 0; i < bytesBetween; i++) {
         for (j = 0; j < 8; j++) {
-            hasher_outputs_digest.in[k][j] <== bytes_between[i][j];
+            hasher_outputs_digest.in[k][j] <== bytes_between_value[i][j];
         }
         k++;
     }
@@ -76,7 +76,7 @@ template zcash_tx_check(bytesBefore, bytesBetween, bytesAfter) {
     }
     for (i = 0; i < bytesAfter; i++) {
         for (j = 0; j < 8; j++) {
-            hasher_outputs_digest.in[k][j] <== bytes_after[i][j];
+            hasher_outputs_digest.in[k][j] <== bytes_after_value[i][j];
         }
         k++;
     }

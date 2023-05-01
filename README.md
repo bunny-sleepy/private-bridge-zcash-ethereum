@@ -6,3 +6,8 @@ To begin with, first run
 npm install
 ```
 
+Run the following for demo test
+
+```console
+cd solidity && npx hardhat test
+```
