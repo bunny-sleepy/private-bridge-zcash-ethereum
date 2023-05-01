@@ -1,0 +1,29 @@
+{
+  "name": "private-bridge-zcash-ethereum",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/bunny-sleepy/private-bridge-zcash-ethereum.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/bunny-sleepy/private-bridge-zcash-ethereum/issues"
+  },
+  "homepage": "https://github.com/bunny-sleepy/private-bridge-zcash-ethereum#readme",
+  "dependencies": {
+    "circomlib": "^2.0.5",
+    "circomlibjs": "^0.1.7",
+    "hardhat": "^2.14.0",
+    "mocha": "^10.2.0",
+    "snarkjs": "^0.6.10"
+  },
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "^2.0.2"
+  }
+}
