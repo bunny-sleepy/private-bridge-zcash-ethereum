@@ -130,22 +130,21 @@ contract Example {
         pubKeyHashBytes = bitcoin_address_to_pubkeyhash(_lockAddress[user][input.index]);
         bytes memory blockHeader;
         blockHeader = _zkBridge.BlockHeader(input.blockNumber);
-
         // 1. get valueBytes
         bytes memory valueBytes;
         valueBytes = uint64_to_bytes_le(input.value);
         _lockValue[user][input.index] = value;
-
         // 2. call zkSNARK verifier
         bool verifyResult = true;
-        verifyResult = _verifier.verifyProofAlt(input.proof.a, input.proof.b, input.proof.c, valueBytes, pubKeyHashBytes, blockHeader);
-
+        verifyResult = _verifier.verifyProofAlt(
+            input.proof.a, input.proof.b, input.proof.c,
+            valueBytes, pubKeyHashBytes, blockHeader
+        );
         // 3. mint tokens if pass
         if (verifyResult == true) {
             _token.mint(input.onBehalfOf, value);
         }
         _result = verifyResult;
-
         return verifyResult;
     }
 

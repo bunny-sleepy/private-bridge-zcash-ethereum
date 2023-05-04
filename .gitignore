@@ -1,0 +1,15 @@
+.output/
+/node_modules
+example_cpp/
+*.r1cs
+*.sym
+*.log
+*.wtns
+artifacts/
+cache/
+output/
+powers_of_tau/
+/circom/tests/
+package-lock.json
+/test
+rapidsnark/
