@@ -4,7 +4,7 @@
 Run
 
 ```console
-npx hardhat install
+npx hardhat compile
 ```
 
 ## 2. Run Local Chain
